@@ -4,7 +4,7 @@ from src.common import *
 
 def create_connection() -> sqlite3.Connection:
     try:
-        conn = sqlite3.connect("database.db", timeout=10)
+        conn = sqlite3.connect(DATABASE_FILE, timeout=10)
         conn.row_factory = sqlite3.Row
 
     except Error as e:

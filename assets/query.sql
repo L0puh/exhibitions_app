@@ -1,7 +1,8 @@
 CREATE TABLE IF NOT EXISTS exhibits(
    exhibit_id INTEGER PRIMARY KEY,
    name TEXT UNIQUE,
-   owner TEXT
+   owner TEXT,
+   status INTEGER
 );
     
 CREATE TABLE IF NOT EXISTS exhibitions(
