@@ -1,14 +1,19 @@
 import datetime
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QDate, QDateTime
 from PyQt6.QtWidgets import (
             QVBoxLayout, QWidget, QLineEdit, 
             QGridLayout, QTextEdit, QLabel,
             QComboBox, QPushButton, QMessageBox, 
-            QHBoxLayout, QDateTimeEdit
+            QHBoxLayout, QDateTimeEdit, QTableWidget,
+            QTableWidgetItem
         )
 
+from PyQt6.QtGui import QIcon
+
+
 from src.data import *
+from src.common import *
 
 class Exhibit_widget(QWidget):
     def __init__(self, window):
@@ -110,6 +115,8 @@ class Order_hold_widget(QWidget):
         self.exhibits    = Exhibit.get_exhibits()
         self.exhibitions = Exhibition.get_exhibtions()
         self.places      = ["PLACE 1", "PLACE 2"] #FIXME
+
+        self.dates = []
         self.initUI()
 
     def initUI(self):
@@ -117,7 +124,7 @@ class Order_hold_widget(QWidget):
         
         reglabel = QLabel("Дата формирования приказа: ")
         self.datereg = QDateTimeEdit()
-        self.datereg.setDateTime(datetime.datetime.now())
+        self.datereg.setDateTime(QDateTime.currentDateTime())
         self.datereg.setDisplayFormat("dd/MM/yy HH:MM")
         self.datereg.setCalendarPopup(1)
 
@@ -126,7 +133,18 @@ class Order_hold_widget(QWidget):
         self.exhibition_input.addItems(self.exhibitions)
         
         dates_label = QLabel("Выберите даты проведения: ")
-        # TODO: self.dates = []
+        self.date= QDateTimeEdit()
+        self.date.setDateTime(QDateTime.currentDateTime())
+        self.date.setDisplayFormat("dd/MM/yyyy HH:mm")
+        self.date.setCalendarPopup(1)
+
+        self.date_add = QPushButton()
+        self.date_add.setIcon(QIcon(icon("add.png")))
+        self.date_add.setIconSize(self.date_add.sizeHint())
+        self.date_add.setFixedSize(self.date_add.sizeHint())
+        self.date_add.clicked.connect(self.add_date)
+
+        self.dates_table = QTableWidget()
         
         place_label = QLabel("Выберите место: ")
         self.place_input = QComboBox(self)
@@ -144,15 +162,51 @@ class Order_hold_widget(QWidget):
         layout.addWidget(exhibtion_label)
         layout.addWidget(self.exhibition_input)
         layout.addWidget(dates_label)
+        layout.addWidget(self.date)
+        layout.addWidget(self.dates_table)
+        layout.addWidget(self.date_add)
         layout.addWidget(place_label)
         layout.addWidget(self.place_input)
         layout.addWidget(exhibits_label)
         layout.addWidget(self.exhibits_input)
         layout.addWidget(self.save_btn)
-        
+         
         self.setLayout(layout)
+        self.update_dates_table()
 
+    def add_date(self):
+        time = self.date.dateTime()
+        now = datetime.datetime.now()
+        if time.date() < now:
+            QMessageBox.warning(self, "ОШИБКА", "Дата введена неверно")
+            return
+        self.dates.append({"date": time.toString('dd/MM/yyyy'),
+                           "time": time.toString('HH:mm')})
+        self.dates_table.hide()
+        self.update_dates_table()
     
+    def update_dates_table(self):
+        self.dates_table.clear()
+        if self.dates:
+            self.dates_table.setColumnCount(2)
+            self.dates_table.setHorizontalHeaderLabels(["Дата", "Время"])
+            self.dates_table.setRowCount(len(self.dates))
+            self.dates_table.show()
+            for row, date in enumerate(self.dates):
+                d = QTableWidgetItem(date["date"])
+                t = QTableWidgetItem(date["time"])
+
+                for i in [t, d]:
+                    i.setFlags(i.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                self.dates_table.setItem(row, 0, d)
+                self.dates_table.setItem(row, 1, t)
+            self.dates_table.setFixedSize(self.dates_table.sizeHint())
+
+        else:
+            self.dates_table.hide()
+        pass
+
+
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_Escape:
             self.close()
