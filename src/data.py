@@ -1,12 +1,12 @@
 from src.database import *
 
 class Exhibit:
-
     """
     0 - open 
     1 - ready to be rented
     2 - rented
     """
+
     def __init__(self, name, owner):
         self.id = 0
         self.name = name
@@ -23,7 +23,16 @@ class Exhibit:
         execute_query(query, (self.id, self.name, self.owner, self.status))
 
     def change_status(self, new_status):
-        pass
+        query = f'''UPDATE exhibits SET status={new_status} WHERE exhibit_id = {self.id};'''
+        execute_query(query)
+
+    def get_exhibits():
+        data = select_all("exhibits")
+        names = []
+        for d in data:
+            names.append(f"{d[1]} ({d[2]})")
+        return names
+
 
 
 class Exhibition:
@@ -41,6 +50,13 @@ class Exhibition:
         
         self.id = get_last_id("exhibitions", "exhibition_id")+1
         execute_query(query, (self.id, self.name, self.description))
+
+    def get_exhibtions():
+        data = select_all("exhibitions")
+        names = []
+        for d in data:
+            names.append(d[1])
+        return names
 
 
 class Order_hold:

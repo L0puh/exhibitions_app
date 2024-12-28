@@ -12,10 +12,13 @@ def create_connection() -> sqlite3.Connection:
     return conn
 
 
-def execute_query(query, data):
+def execute_query(query, data=None):
     conn = create_connection()
     try:
-        conn.cursor().execute(query, data)
+        if data:
+            conn.cursor().execute(query, data)
+        else:
+            conn.cursor().execute(query)
         conn.commit()
         conn.close()
     except sqlite3.Error as er:
@@ -36,4 +39,15 @@ def get_last_id(table, column):
     result = cursor.fetchone()
     conn.close()
     return result[0] or 0
+
+def select_all(table) -> list:
+    conn = create_connection()
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT * FROM {table}")
+    rows = cursor.fetchall()
+    data = []
+    for row in rows:
+        data.append(row)
+
+    return data
 
