@@ -30,7 +30,7 @@ class Exhibit:
         data = select_all("exhibits")
         names = []
         for d in data:
-            names.append(f"{d[1]} ({d[2]})")
+            names.append({"name": d[1], "owner": d[2], "id": int(d[0]), "input": f"{d[1]} ({d[2]})"})
         return names
 
 
@@ -52,15 +52,15 @@ class Exhibition:
         execute_query(query, (self.id, self.name, self.description))
 
     def get_exhibtions():
-        data = select_all("exhibitions")
+        data: sqlite.Row = select_all("exhibitions")
         names = []
         for d in data:
-            names.append(d[1])
+            names.append({"name": d[1], "about": d[2], "id": int(d[0])})
         return names
 
 
 class Order_hold:
-    def __init__(self, reg, hold, exhibition: Exhibition, place, exhibits: list[Exhibit]):
+    def __init__(self, reg, hold:list, exhibition: dict, place, exhibits: list[dict]):
         self.id = 0
         self.reg = reg
         self.hold = hold
@@ -72,17 +72,26 @@ class Order_hold:
     
     def insert_order_to_hold(self):
 
-        query = '''INSERT INTO order_hold (order_id, date_reg, date_hold, exhibition_id, place) 
-                   VALUES(?, ?, ?, ?, ?);'''
+        query = '''INSERT INTO order_hold (order_id, date_reg, exhibition_id, place) 
+                   VALUES(?, ?, ?, ?);'''
         
         self.id = get_last_id("order_hold", "order_id")+1
-        execute_query(query, (self.id, self.reg, self.hold, self.exhibition.id, self.place))
+        execute_query(query, (self.id, self.reg, self.exhibition["id"], self.place))
+
         
         query = '''INSERT INTO order_hold_exhibits (order_id, exhibit_id) 
                    VALUES(?, ?);'''
       
         for ex in self.exhibits:
-            execute_query(query, (self.id, ex.id))
+            execute_query(query, (self.id, ex["id"]))
+        
+        query = '''INSERT INTO order_hold_dates (order_id, date_hold) 
+                   VALUES(?, ?);'''
+
+        for da in self.hold:
+            execute_query(query, (self.id, da))
+
+        print("[+] order hold added:", self.id)
 
 
 class Order_get:

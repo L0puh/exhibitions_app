@@ -14,11 +14,16 @@ CREATE TABLE IF NOT EXISTS exhibitions(
 CREATE TABLE IF NOT EXISTS order_hold(
    order_id INTEGER PRIMARY KEY, 
    date_reg timestamp,
-   date_hold timestamp,
    exhibition_id INTEGER,
    place TEXT,
    FOREIGN KEY (exhibition_id) REFERENCES exhibits (exhibitions) ON DELETE CASCADE
 
+);
+
+CREATE TABLE IF NOT EXISTS order_hold_dates(
+   order_id INTEGER,
+   date_hold timestamp,
+   FOREIGN KEY (order_id) REFERENCES order_hold (order_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS order_hold_exhibits(
@@ -28,7 +33,6 @@ CREATE TABLE IF NOT EXISTS order_hold_exhibits(
    FOREIGN KEY (order_id) REFERENCES order_hold (order_id) ON DELETE CASCADE,
    FOREIGN KEY (exhibit_id) REFERENCES exhibits (exhibit_id) ON DELETE CASCADE
 );
-
 
 
 CREATE TABLE IF NOT EXISTS order_get(
