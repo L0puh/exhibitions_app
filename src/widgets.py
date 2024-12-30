@@ -29,7 +29,7 @@ class Exhibit_widget(QWidget):
         self.name_input = QLineEdit()
         self.name_input.setPlaceholderText("Название")
 
-        self.owner_label = QLabel("\tВладелец:")
+        self.owner_label = QLabel("Владелец:")
         self.owner_input = QComboBox(self)
         self.owner_input.addItems(self.owners)
         
@@ -39,11 +39,12 @@ class Exhibit_widget(QWidget):
         self.save_btn.setFixedSize(self.save_btn.sizeHint())
 
         
-        layout = QHBoxLayout()
+        layout = QVBoxLayout()
         layout.addWidget(self.name_input)
         layout.addWidget(self.owner_label)
         layout.addWidget(self.owner_input)
         layout.addWidget(self.save_btn)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.setLayout(layout)
 
@@ -88,6 +89,7 @@ class Exhibition_widget(QWidget):
         layout.addWidget(self.name_input)
         layout.addWidget(self.about_input)
         layout.addWidget(self.save_btn)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.setLayout(layout)
 
@@ -159,7 +161,6 @@ class Order_hold_widget(QWidget):
         self.exhibits_input = QListWidget(self)
         self.exhibits_input.addItems(self.data_exhibits)
         self.exhibits_input.clicked.connect(self.add_exhibit)
-        self.exhibits_input.setFixedSize(self.exhibits_input.sizeHint())
 
         self.save_btn = QPushButton("Сохранить")
         self.save_btn.clicked.connect(self.save_order)
@@ -179,6 +180,7 @@ class Order_hold_widget(QWidget):
         layout.addWidget(self.exhibits_input)
         layout.addWidget(self.exhibits_table)
         layout.addWidget(self.save_btn)
+        layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
          
         self.setLayout(layout)
         self.update_dates_table()
@@ -216,7 +218,6 @@ class Order_hold_widget(QWidget):
                     self.data_exhibits.pop(i)
                     self.exhibits_input.clear()
                     self.exhibits_input.addItems(self.data_exhibits)
-                    self.exhibits_input.setFixedSize(self.exhibits_input.sizeHint())
                     self.chosen_exhibits.append(ex)
                     break
         if len(self.exhibits) == 0: 
@@ -260,7 +261,6 @@ class Order_hold_widget(QWidget):
                 self.exhibits_table.setItem(row, 1, t)
                 self.exhibits_table.setItem(row, 2, s)
 
-            self.exhibits_table.setFixedSize(self.exhibits_table.sizeHint())
 
         else:
             self.exhibits_table.hide()
@@ -327,6 +327,7 @@ class Order_base:
         layout.addWidget(widget.exhibits_input)
         layout.addWidget(widget.exhibits_table)
         layout.addWidget(widget.save_btn)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         widget.setLayout(layout)
         
         if widget.order_id != -1:
@@ -409,7 +410,6 @@ class Order_base:
                 widget.exhibits_table.setItem(row, 1, t)
                 widget.exhibits_table.setItem(row, 2, s)
 
-            widget.exhibits_table.setFixedSize(widget.exhibits_table.sizeHint())
         else:
             widget.exhibits_table.hide()
         return widget 
@@ -500,6 +500,7 @@ class Orders_list_widget(QWidget):
 
     def initUI(self):
         self.setWindowTitle("Список")
+        self.setGeometry(600, 600, 500, 500)
         self.list_orders = QListWidget()
         self.update_list()
 
@@ -564,8 +565,6 @@ class Orders_list_widget(QWidget):
     def delete_order(self, indx):
         Order_hold.delete_order(self.orders[indx]["id"])
         self.update_list()
-
-
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_Escape:

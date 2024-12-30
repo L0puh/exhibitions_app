@@ -2,8 +2,11 @@ from src.widgets import *
 
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QMainWindow, QHBoxLayout, QWidget, QPushButton
+from PyQt6.QtWidgets import QMainWindow, QHBoxLayout, QWidget, QPushButton, QVBoxLayout
 from PyQt6.QtGui import QAction, QIcon
+
+from src.common import WELCOME_TEXT
+from src.lists_widget import *
 
 class Window(QMainWindow):
     def __init__(self, *args, **kwargs):
@@ -13,8 +16,26 @@ class Window(QMainWindow):
 
         self.central = QWidget(self)
         self.draw_menu()
+        
+        welcome_label = QLabel(WELCOME_TEXT)
+        welcome_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        layout = QHBoxLayout()
+        order_btn = QPushButton()
+        order_btn.setText("Создать приказ о проведении")
+        orders_btn = QPushButton() 
+        orders_btn.setText("Открыть список всех приказов")
+        
+        order_btn.clicked.connect(self.open_order_hold)
+        orders_btn.clicked.connect(self.open_orders_list)
+
+        layout = QVBoxLayout()
+        btn_layout = QHBoxLayout()
+        btn_layout.addWidget(order_btn)
+        btn_layout.addWidget(orders_btn)
+        layout.addWidget(welcome_label)
+        layout.addLayout(btn_layout)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
         self.central.setLayout(layout)
         self.setCentralWidget(self.central)
         self.statusBar = self.statusBar()
@@ -37,30 +58,26 @@ class Window(QMainWindow):
         a_exhibition = QAction(QIcon(icon("add.png")), "&Добавить выставку", self)
         a_exhibition.triggered.connect(self.open_exhibition_widget)
 
-        a_order_hold = QAction(QIcon(icon("add.png")), "&Приказ о проведении", self)
+        a_order_hold = QAction(QIcon(icon("order.png")), "&Приказ о проведении", self)
         a_order_hold.triggered.connect(self.open_order_hold)
-        
-        a_order_get = QAction(QIcon(icon("add.png")), "&Приказ о  поступлении", self)
-        a_order_get.triggered.connect(self.open_order_get)
-        
-        a_order_give = QAction(QIcon(icon("add.png")), "&Приказ о  передачи", self)
-        a_order_give.triggered.connect(self.open_order_give)
 
-        a_order_return = QAction(QIcon(icon("add.png")), "&Приказ о возврате", self)
-        a_order_return.triggered.connect(self.open_order_return)
-
-        a_orders_list = QAction(QIcon(icon("add.png")), "&Список приказов", self)
+        a_orders_list = QAction(QIcon(icon("list.png")), "&Список приказов", self)
         a_orders_list.triggered.connect(self.open_orders_list)
+        
+        a_exhibits_list = QAction(QIcon(icon("list.png")), "&Список экспонатов", self)
+        a_exhibits_list.triggered.connect(self.open_exhibits_list)
+
+        a_exhibitions_list = QAction(QIcon(icon("list.png")), "&Список выставок", self)
+        a_exhibitions_list.triggered.connect(self.open_exhibitions_list)
 
         m_main.addAction(a_exhibit)
         m_main.addAction(a_exhibition)
         m_main.addAction(a_exit)
         
-        m_lists.addAction(a_orders_list)
+        m_lists.addAction(a_exhibits_list)
+        m_lists.addAction(a_exhibitions_list)
         m_orders.addAction(a_order_hold)
-        m_orders.addAction(a_order_get)
-        m_orders.addAction(a_order_give)
-        m_orders.addAction(a_order_return)
+        m_orders.addAction(a_orders_list)
 
 
     def keyPressEvent(self, event):
@@ -94,3 +111,11 @@ class Window(QMainWindow):
     def open_orders_list(self, data=[]):
         self.orders_list = Orders_list_widget(self)
         self.orders_list.show()
+
+    def open_exhibits_list(self):
+        self.exhibits_list = Exhibits_list_widget()
+        self.exhibits_list.show()
+
+    def open_exhibitions_list(self):
+        self.exhibitions_list = Exhibitions_list_widget()
+        self.exhibitions_list.show()

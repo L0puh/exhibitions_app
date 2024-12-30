@@ -45,6 +45,9 @@ class Exhibit:
         if d: return {"name": d[1], "owner": d[2], "status": int(d[3]), "id": int(d[0]), 
                           "input": f"{d[1]} ({d[2]})"}
         return {}
+    
+    def delete_exhibit(exhibit_id):
+        delete_where("exhibits", "exhibit_id", exhibit_id)
 
 
 
@@ -70,6 +73,9 @@ class Exhibition:
         for d in data:
             names.append({"name": d[1], "about": d[2], "id": int(d[0])})
         return names
+    
+    def delete_exhibition(exhibition_id: int):
+        delete_where("exhibitions", "exhibition_id", exhibition_id)
 
 
 class Order_hold:
