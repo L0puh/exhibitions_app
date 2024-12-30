@@ -12,13 +12,15 @@ class Window(QMainWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setWindowTitle("Главное")
-        self.setGeometry(800, 800, 800, 800)
+        self.setGeometry(600, 600, 600, 600)
 
         self.central = QWidget(self)
         self.draw_menu()
         
         welcome_label = QLabel(WELCOME_TEXT)
-        welcome_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        welcome_label.setMargin(50)
+        welcome_label.setFixedWidth(500)
+        welcome_label.setWordWrap(1)
 
         order_btn = QPushButton()
         order_btn.setText("Создать приказ о проведении")
@@ -61,14 +63,20 @@ class Window(QMainWindow):
         a_order_hold = QAction(QIcon(icon("order.png")), "&Приказ о проведении", self)
         a_order_hold.triggered.connect(self.open_order_hold)
 
-        a_orders_list = QAction(QIcon(icon("list.png")), "&Список приказов", self)
+        a_orders_list = QAction(QIcon(icon("list.png")), "&Организация выставки", self)
         a_orders_list.triggered.connect(self.open_orders_list)
         
-        a_exhibits_list = QAction(QIcon(icon("list.png")), "&Список экспонатов", self)
+        a_exhibits_list = QAction(QIcon(icon("exhibit.png")), "&Список экспонатов", self)
         a_exhibits_list.triggered.connect(self.open_exhibits_list)
 
-        a_exhibitions_list = QAction(QIcon(icon("list.png")), "&Список выставок", self)
+        a_exhibitions_list = QAction(QIcon(icon("exhibition.png")), "&Список выставок", self)
         a_exhibitions_list.triggered.connect(self.open_exhibitions_list)
+
+        a_help = QAction(QIcon(icon("help.png")), "&Помощь", self)
+        a_help.triggered.connect(self.help)
+        
+        a_about = QAction(QIcon(icon("about.png")), "&О нас", self)
+        a_about.triggered.connect(self.about)
 
         m_main.addAction(a_exhibit)
         m_main.addAction(a_exhibition)
@@ -79,6 +87,15 @@ class Window(QMainWindow):
         m_orders.addAction(a_order_hold)
         m_orders.addAction(a_orders_list)
 
+        m_help.addAction(a_help)
+        m_help.addAction(a_about)
+
+    def help(self):
+        with open(os.path.join(os.getcwd(), "docs", "help.html"), "r") as f:
+            QMessageBox.about(self, "Помощь", f.read())
+
+    def about(self):
+        QMessageBox.about(self, "О нас", WELCOME_TEXT)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_Escape:

@@ -18,7 +18,7 @@ class Exhibit_widget(QWidget):
     def __init__(self, window):
         super().__init__()
         self.window = window
-        self.owners = ["OWNER 1", "OWNER 2"] #FIXME 
+        self.owners = get_json("owners")
         
         self.initUI()
 
@@ -115,7 +115,7 @@ class Order_hold_widget(QWidget):
 
         self.exhibits    = Exhibit.get_exhibits()
         self.exhibitions = Exhibition.get_exhibtions()
-        self.places      = ["PLACE 1", "PLACE 2"] #FIXME
+        self.places = get_json("places")
         
         self.data_exhibits = [i["input"] for i in self.exhibits]
         self.exhibitions_data = [i["name"] for i in self.exhibitions]

@@ -7,6 +7,7 @@ from src.common import *
 
 from PyQt6.QtWidgets import QApplication
 
+
 if __name__ == "__main__":
     create_tables()
     app = QApplication(sys.argv)
