@@ -42,15 +42,25 @@ class Window(QMainWindow):
         
         a_order_get = QAction(QIcon(icon("add.png")), "&Приказ о  поступлении", self)
         a_order_get.triggered.connect(self.open_order_get)
+        
+        a_order_give = QAction(QIcon(icon("add.png")), "&Приказ о  передачи", self)
+        a_order_give.triggered.connect(self.open_order_give)
+
+        a_order_return = QAction(QIcon(icon("add.png")), "&Приказ о возврате", self)
+        a_order_return.triggered.connect(self.open_order_return)
+
+        a_orders_list = QAction(QIcon(icon("add.png")), "&Список приказов", self)
+        a_orders_list.triggered.connect(self.open_orders_list)
 
         m_main.addAction(a_exhibit)
         m_main.addAction(a_exhibition)
         m_main.addAction(a_exit)
-
+        
+        m_lists.addAction(a_orders_list)
         m_orders.addAction(a_order_hold)
         m_orders.addAction(a_order_get)
-        # m_orders.addAction(a_order_give)
-        # m_orders.addAction(a_order_return)
+        m_orders.addAction(a_order_give)
+        m_orders.addAction(a_order_return)
 
 
     def keyPressEvent(self, event):
@@ -69,6 +79,18 @@ class Window(QMainWindow):
         self.order_hold = Order_hold_widget(self)
         self.order_hold.show()
     
-    def open_order_get(self):
-        self.order_get = Order_get_widget(self)
+    def open_order_get(self, data=[]):
+        self.order_get = Order_get_widget(self, data)
         self.order_get.show()
+    
+    def open_order_give(self, data=[]):
+        self.order_give = Order_give_widget(self, data)
+        self.order_give.show()
+    
+    def open_order_return(self, data=[]):
+        self.order_return = Order_return_widget(self, data)
+        self.order_return.show()
+
+    def open_orders_list(self, data=[]):
+        self.orders_list = Orders_list_widget(self)
+        self.orders_list.show()

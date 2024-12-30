@@ -63,10 +63,16 @@ def select_where(table, key, value) -> list:
 
     return data
 
-def select_one_where(table, key, value) -> list:
+def select_one_where(table, keys:list, values:list) -> sqlite3.Row :
     conn = create_connection()
     cursor = conn.cursor()
-    cursor.execute(f"SELECT * FROM {table} WHERE {key} = {value}")
+    query = f"SELECT * FROM {table} WHERE"
+    for i, key in enumerate(keys):
+        query += f" {key} = {values[i]} AND"
+    cursor.execute(query[:-3])
     rows = cursor.fetchone()
     return rows
 
+def delete_where(table, key, value):
+    query = f"DELETE FROM {table} WHERE {key} = {value};"
+    execute_query(query)

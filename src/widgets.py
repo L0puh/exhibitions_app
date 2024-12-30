@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (
             QGridLayout, QTextEdit, QLabel,
             QComboBox, QPushButton, QMessageBox, 
             QHBoxLayout, QDateTimeEdit, QTableWidget,
-            QTableWidgetItem, QListWidget
+            QTableWidgetItem, QListWidget, QListWidgetItem
         )
 
 from PyQt6.QtGui import QIcon
@@ -240,18 +240,25 @@ class Order_hold_widget(QWidget):
     def update_exhibits_table(self):
         self.exhibits_table.clear()
         if self.chosen_exhibits:
-            self.exhibits_table.setColumnCount(2)
-            self.exhibits_table.setHorizontalHeaderLabels(["Экспонат", "Владелец"])
+            self.exhibits_table.setColumnCount(3)
+            self.exhibits_table.setHorizontalHeaderLabels(["Экспонат", "Владелец", "Статус"])
             self.exhibits_table.setRowCount(len(self.chosen_exhibits))
             self.exhibits_table.show()
             for row, ex in enumerate(self.chosen_exhibits):
                 d = QTableWidgetItem(ex["name"])
                 t = QTableWidgetItem(ex["owner"])
+                s = Exhibit.get_status(ex["status"])
+                if ex["status"] == 2:
+                    QMessageBox.information(self, "", f"{ex['name']} уже забронировн\nДанный экспонат не будет учитываться\
+                                                                                        до момент измнения статуса")
 
-                for i in [t, d]:
+                s = QTableWidgetItem(s)
+                for i in [t, d, s]:
                     i.setFlags(i.flags() & ~Qt.ItemFlag.ItemIsEditable)
+
                 self.exhibits_table.setItem(row, 0, d)
                 self.exhibits_table.setItem(row, 1, t)
+                self.exhibits_table.setItem(row, 2, s)
 
             self.exhibits_table.setFixedSize(self.exhibits_table.sizeHint())
 
@@ -283,93 +290,184 @@ class Order_hold_widget(QWidget):
         if event.key() == Qt.Key.Key_Escape:
             self.close()
 
+class Order_base:
+    def initUI(widget, date_label, is_give=0, is_return=0):
+        widget.setWindowTitle("Приказ")
 
-class Order_get_widget(QWidget):
-    def __init__(self, window):
-        super().__init__()
-        self.window = window
-        self.orders = Order_hold.get_orders()
-        self.orders_data = [i["input"] for i in self.orders]
-        self.chosen_exhibits = []
-        self.data_exhibits = []
-        self.exhibits = []
-        self.order_id = 0
-        self.initUI()
+        date_label = QLabel(date_label)
+        widget.date = QDateTimeEdit()
+        widget.date.setDateTime(QDateTime.currentDateTime())
+        widget.date.setDisplayFormat("dd/MM/yyyy HH:mm")
+        widget.date.setCalendarPopup(1)
 
-    def initUI(self):
-        self.setWindowTitle("Приказ")
+        widget.order_label = QLabel("Выберите приказ о проведении выставки:")
+        widget.order_input = QListWidget()
+        widget.order_input.addItems(widget.orders_data)
+        widget.order_input.clicked.connect(lambda i: Order_base.fetch_exhibits(widget,i, is_give=is_give, is_return=is_return))
 
-        date_label = QLabel("Выберите дату поступления: ")
-        self.date = QDateTimeEdit()
-        self.date.setDateTime(QDateTime.currentDateTime())
-        self.date.setDisplayFormat("dd/MM/yyyy HH:mm")
-        self.date.setCalendarPopup(1)
+        widget.exhibits_label = QLabel("Выберите приказ для отображения экспонатов")
 
-        self.order_label = QLabel("Выберите приказ о проведении выставки: ")
-        self.order_input = QListWidget()
-        self.order_input.addItems(self.orders_data)
-        self.order_input.clicked.connect(self.fetch_exhibits)
+        widget.exhibits_input = QListWidget(widget)
+        widget.exhibits_input.clicked.connect(lambda i: Order_base.add_exhibits_table(widget, i, is_give=is_give, is_return=is_return))
+        widget.exhibits_input.setFixedSize(widget.exhibits_input.sizeHint())
         
-        self.exhibits_label = QLabel("Выберите приказ для отображения экспонатов")
+        widget.exhibits_input.hide()
+        widget.save_btn = QPushButton("Сохранить")
+        widget.save_btn.clicked.connect(lambda: Order_base.save_order(widget, is_give=is_give, is_return=is_return))
 
-        self.exhibits_input = QListWidget(self)
-        self.exhibits_input.clicked.connect(self.add_exhibits_table)
-        self.exhibits_input.setFixedSize(self.exhibits_input.sizeHint())
-        
-        self.exhibits_input.hide()
-        self.save_btn = QPushButton("Сохранить")
-        self.save_btn.clicked.connect(self.save_order)
-
-        self.exhibits_table = QTableWidget()
-        self.exhibits_table.hide()
+        widget.exhibits_table = QTableWidget()
+        widget.exhibits_table.hide()
 
         layout = QVBoxLayout()
         layout.addWidget(date_label)
-        layout.addWidget(self.date)
-        layout.addWidget(self.order_label)
-        layout.addWidget(self.order_input)
-        layout.addWidget(self.exhibits_label)
-        layout.addWidget(self.exhibits_input)
-        layout.addWidget(self.exhibits_table)
-        layout.addWidget(self.save_btn)
-        self.setLayout(layout)
+        layout.addWidget(widget.date)
+        layout.addWidget(widget.order_label)
+        layout.addWidget(widget.order_input)
+        layout.addWidget(widget.exhibits_label)
+        layout.addWidget(widget.exhibits_input)
+        layout.addWidget(widget.exhibits_table)
+        layout.addWidget(widget.save_btn)
+        widget.setLayout(layout)
+        
+        if widget.order_id != -1:
+            widget.order_input.hide()
+            Order_base.fetch_exhibits(widget, -1, is_return=is_return, is_give=is_give)
+        return widget
 
-    def add_exhibits_table(self, indx):
-        exhibit = self.exhibits_input.itemFromIndex(indx).text()
+    def add_exhibits_table(widget, indx, is_give=0, is_return=0):
+        exhibit = widget.exhibits_input.itemFromIndex(indx).text()
         if exhibit:
-            for i, ex in enumerate(self.exhibits):
+            for i, ex in enumerate(widget.exhibits):
                 if exhibit == ex["input"]:
-                    self.exhibits.pop(i)
-                    self.data_exhibits.pop(i)
-                    self.exhibits_input.clear()
-                    self.exhibits_input.addItems(self.data_exhibits)
-                    self.exhibits_input.setFixedSize(self.exhibits_input.sizeHint())
-                    self.chosen_exhibits.append(ex)
+                    widget.exhibits.pop(i)
+                    widget.data_exhibits.pop(i)
+                    widget.exhibits_input.clear()
+                    widget.exhibits_input.addItems(widget.data_exhibits)
+                    widget.exhibits_input.setFixedSize(widget.exhibits_input.sizeHint())
+                    widget.chosen_exhibits.append(ex)
                     break
 
-        if len(self.exhibits) == 0: 
-            self.exhibits_label.setText("Список экспонатов пуст")
-            self.exhibits_input.hide()
-        self.update_exhibits_table()
+        if len(widget.exhibits) == 0: 
+            widget.exhibits_label.setText("Список экспонатов пуст")
+            widget.exhibits_input.hide()
 
-    def fetch_exhibits(self, indx):
-        item = self.order_input.itemFromIndex(indx).text()
+        Order_base.update_exhibits_table(widget, is_give=is_give, is_return=is_return)
+
+    def fetch_exhibits(widget, indx, is_return=0, is_give=0):
+        if indx != -1:
+            item = widget.order_input.itemFromIndex(indx).text()
+            cur_order = {}
+            for i, order in enumerate(widget.orders):
+                if order["input"] == item:
+                    cur_order = order
+                    widget.order_id = order["id"]
+                    break
+        else:
+            cur_order = widget.order
+        if is_return:
+            widget.exhibits = Order_hold.get_exhibits_rented_out(cur_order["id"])
+        elif is_give:
+            widget.exhibits = Order_hold.get_exhibits_ready_rentout(cur_order["id"])
+        else:
+            widget.exhibits = Order_hold.get_exhibits(cur_order["id"])
+        widget.data_exhibits = [i["input"] for i in widget.exhibits]
+        widget.exhibits_input.addItems(widget.data_exhibits)
+        widget.exhibits_label.setText("Выберите экспонаты: ")
+        widget.exhibits_input.show()
+        widget.order_label.setText(f"Приказ выбран: {cur_order['input']}")
+        widget.order_input.hide()
+        if len(widget.exhibits) == 0: 
+            if is_give:
+                QMessageBox.information(widget, "", "Список экспонатов готовых для бронирования пуст")
+            elif is_return:
+                QMessageBox.information(widget, "", "Список экспонатов готовых для возврата пуст")
+            else:
+                QMessageBox.information(widget, "", "Список экспонатов готовых для передачи пуст")
+            widget.close()
+        return widget 
+
+
+    def update_exhibits_table(widget, is_give=0, is_return=0):
+        widget.exhibits_table.clear()
+        if widget.chosen_exhibits:
+            widget.exhibits_table.setColumnCount(3)
+            widget.exhibits_table.setHorizontalHeaderLabels(["Экспонат", "Владелец", "Статус"])
+            widget.exhibits_table.setRowCount(len(widget.chosen_exhibits))
+            widget.exhibits_table.show()
+            for row, ex in enumerate(widget.chosen_exhibits):
+                d = QTableWidgetItem(ex["name"])
+                t = QTableWidgetItem(ex["owner"])
+
+                s = QTableWidgetItem(Exhibit.get_status(ex["status"]))
+                if ex["status"] == 2 and not is_return:
+                    QMessageBox.information(widget, "", f"{ex['name']} уже забронировн\nДанный экспонат не будет учитываться\
+                                                                                        до момент измнения статуса")
+                for i in [t, d,s ]:
+                    i.setFlags(i.flags() & ~Qt.ItemFlag.ItemIsEditable)
+
+                widget.exhibits_table.setItem(row, 0, d)
+                widget.exhibits_table.setItem(row, 1, t)
+                widget.exhibits_table.setItem(row, 2, s)
+
+            widget.exhibits_table.setFixedSize(widget.exhibits_table.sizeHint())
+        else:
+            widget.exhibits_table.hide()
+        return widget 
+
+    def save_order(widget, is_give=0, is_return=0):
+        date = widget.date.dateTime()
+        if date.date() < datetime.datetime.now().date():
+            QMessageBox.warning(widget, "ОШИБКА", "Дата введена неверно")
+            return
+
+        date = date.toString("dd/MM/yyyy HH:mm")
         
-        cur_order = {}
-        for i, order in enumerate(self.orders):
-            if order["input"] == item:
-                cur_order = order
-                self.id = order["id"]
-                break
+        if widget.chosen_exhibits:
+            if is_give:
+                order = Order_give(date, widget.order_id, widget.chosen_exhibits)
+            elif is_return:
+                order = Order_return(date, widget.order_id, widget.chosen_exhibits)
+            else:
+                order = Order_get(date, widget.order_id, widget.chosen_exhibits)
+            QMessageBox.information(widget, "", f"Заказ оформлен успешно")
+            widget.close()
 
-        self.exhibits = Order_hold.get_exhibits(cur_order["id"])
+        else:
+            QMessageBox.warning(widget, "Ошибка", "Данные введены неверно")
 
-        self.data_exhibits = [i["input"] for i in self.exhibits]
-        self.exhibits_input.addItems(self.data_exhibits)
-        self.exhibits_label.setText("Выберите экспонаты: ")
-        self.exhibits_input.show()
-        self.order_label.setText(f"Приказ выбран: {item}")
-        self.order_input.hide()
+class Order_get_widget(QWidget):
+    def __init__(self, window, data):
+        super().__init__()
+        self.window = window
+        self.orders = Order_hold.get_orders()
+        self.orders_data = [i["input"] for i in self.orders] if self.orders else []
+        self.chosen_exhibits = []
+        self.data_exhibits = []
+        self.exhibits = []
+        
+        self.order_id = -1 if not data else data["id"]
+        self.order = data
+
+        self = Order_base.initUI(self, "Выберите дату поступления: ")
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Escape:
+            self.close()
+
+
+class Order_give_widget(QWidget):
+    def __init__(self, window, data):
+        super().__init__()
+        self.window = window
+        self.orders = Order_get.get_hold_orders()
+        self.orders_data = [i["input"] for i in self.orders] if self.orders else []
+        self.exhibits = []
+        self.exhibits_data = []
+        self.chosen_exhibits = []
+        self.order_id = -1 if not data else data["id"]
+        self.order = data
+        self = Order_base.initUI(self, "Выберите дату передачи экспонатов:",is_give=1)
+
 
 
     def keyPressEvent(self, event):
@@ -377,39 +475,98 @@ class Order_get_widget(QWidget):
             self.close()
 
 
-    def update_exhibits_table(self):
-        self.exhibits_table.clear()
-        if self.chosen_exhibits:
-            self.exhibits_table.setColumnCount(2)
-            self.exhibits_table.setHorizontalHeaderLabels(["Экспонат", "Владелец"])
-            self.exhibits_table.setRowCount(len(self.chosen_exhibits))
-            self.exhibits_table.show()
-            for row, ex in enumerate(self.chosen_exhibits):
-                d = QTableWidgetItem(ex["name"])
-                t = QTableWidgetItem(ex["owner"])
-                for i in [t, d]:
-                    i.setFlags(i.flags() & ~Qt.ItemFlag.ItemIsEditable)
+class Order_return_widget(QWidget):
+    def __init__(self, window, data):
+        super().__init__()
+        self.window = window
+        self.orders = Order_give.get_get_orders()
+        self.orders_data = [i["input"] for i in self.orders] if self.orders else []
+        self.exhibits = []
+        self.exhibits_data = []
+        self.chosen_exhibits = []
+        self.order_id = -1 if not data else data["id"]
+        self.order = data
+        self = Order_base.initUI(self, "Выберите дату возврата: ", is_return=1)
 
-                self.exhibits_table.setItem(row, 0, d)
-                self.exhibits_table.setItem(row, 1, t)
-
-            self.exhibits_table.setFixedSize(self.exhibits_table.sizeHint())
-
-        else:
-            self.exhibits_table.hide()
-    
-    def save_order(self):
-        date = self.date.dateTime()
-        if date.date() < datetime.datetime.now().date():
-            QMessageBox.warning(self, "ОШИБКА", "Дата введена неверно")
-            return
-
-        date = date.toString("dd/MM/yyyy HH:mm")
-        
-        if self.chosen_exhibits:
-            order = Order_get(date, self.order_id, self.chosen_exhibits)
-            QMessageBox.information(self, "", f"Заказ оформлен успешно")
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Escape:
             self.close()
 
-        else:
-            QMessageBox.warning(self, "Ошибка", "Данные введены неверно")
+class Orders_list_widget(QWidget):
+    def __init__(self, window):
+        super().__init__()
+        self.window = window
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowTitle("Список")
+        self.list_orders = QListWidget()
+        self.update_list()
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.list_orders)
+        self.setLayout(layout)
+   
+    def update_list(self):
+        self.orders = Order_hold.get_orders()
+        self.list_orders.clear()
+        self.orders_data = [i["input"] for i in self.orders] if self.orders else []
+        
+        for indx, data in enumerate(self.orders):
+            item = QListWidgetItem()
+            name_label = QLabel(data["input"])
+            status_label = QLabel(f"Статус: {Order_hold.get_status(data['status'])}")
+
+            button = QPushButton()
+            get_icon = QIcon(icon("get.png"))
+            give_icon = QIcon(icon("give.png"))
+            return_icon = QIcon(icon("return.png"))
+            delete_icon = QIcon(icon("delete.png"))
+
+            if data["status"] == 0:
+                button.setIcon(get_icon)
+                button.clicked.connect(lambda: self.open_order_get(indx))
+            elif data["status"] == 1:
+                button.setIcon(give_icon)
+                button.clicked.connect(lambda: self.open_order_give(indx))
+            elif data["status"] == 2:
+                button.setIcon(return_icon)
+                button.clicked.connect(lambda: self.open_order_return(indx))
+            else:
+                button.setIcon(delete_icon)
+                button.clicked.connect(lambda: self.delete_order(indx))
+
+            button.setIconSize(button.sizeHint())
+            button.setFixedSize(button.iconSize())
+
+            layout = QHBoxLayout()
+            layout.addWidget(name_label)
+            layout.addWidget(status_label)
+            layout.addWidget(button)
+            widget = QWidget()
+            widget.setLayout(layout)
+            item.setSizeHint(widget.sizeHint())
+            self.list_orders.addItem(item)
+            self.list_orders.setItemWidget(item, widget)
+       
+    def open_order_get(self, indx):
+        self.window.open_order_get(self.orders[indx])
+        self.close()
+
+    def open_order_give(self, indx):
+        self.window.open_order_give(self.orders[indx])
+        self.close()
+
+    def open_order_return(self, indx):
+        self.window.open_order_return(self.orders[indx])
+        self.close()
+
+    def delete_order(self, indx):
+        Order_hold.delete_order(self.orders[indx]["id"])
+        self.update_list()
+
+
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Escape:
+            self.close()
