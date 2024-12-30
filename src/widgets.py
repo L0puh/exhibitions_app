@@ -11,7 +11,6 @@ from PyQt6.QtWidgets import (
 
 from PyQt6.QtGui import QIcon
 
-
 from src.data import *
 from src.common import *
 
@@ -285,3 +284,132 @@ class Order_hold_widget(QWidget):
             self.close()
 
 
+class Order_get_widget(QWidget):
+    def __init__(self, window):
+        super().__init__()
+        self.window = window
+        self.orders = Order_hold.get_orders()
+        self.orders_data = [i["input"] for i in self.orders]
+        self.chosen_exhibits = []
+        self.data_exhibits = []
+        self.exhibits = []
+        self.order_id = 0
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowTitle("Приказ")
+
+        date_label = QLabel("Выберите дату поступления: ")
+        self.date = QDateTimeEdit()
+        self.date.setDateTime(QDateTime.currentDateTime())
+        self.date.setDisplayFormat("dd/MM/yyyy HH:mm")
+        self.date.setCalendarPopup(1)
+
+        self.order_label = QLabel("Выберите приказ о проведении выставки: ")
+        self.order_input = QListWidget()
+        self.order_input.addItems(self.orders_data)
+        self.order_input.clicked.connect(self.fetch_exhibits)
+        
+        self.exhibits_label = QLabel("Выберите приказ для отображения экспонатов")
+
+        self.exhibits_input = QListWidget(self)
+        self.exhibits_input.clicked.connect(self.add_exhibits_table)
+        self.exhibits_input.setFixedSize(self.exhibits_input.sizeHint())
+        
+        self.exhibits_input.hide()
+        self.save_btn = QPushButton("Сохранить")
+        self.save_btn.clicked.connect(self.save_order)
+
+        self.exhibits_table = QTableWidget()
+        self.exhibits_table.hide()
+
+        layout = QVBoxLayout()
+        layout.addWidget(date_label)
+        layout.addWidget(self.date)
+        layout.addWidget(self.order_label)
+        layout.addWidget(self.order_input)
+        layout.addWidget(self.exhibits_label)
+        layout.addWidget(self.exhibits_input)
+        layout.addWidget(self.exhibits_table)
+        layout.addWidget(self.save_btn)
+        self.setLayout(layout)
+
+    def add_exhibits_table(self, indx):
+        exhibit = self.exhibits_input.itemFromIndex(indx).text()
+        if exhibit:
+            for i, ex in enumerate(self.exhibits):
+                if exhibit == ex["input"]:
+                    self.exhibits.pop(i)
+                    self.data_exhibits.pop(i)
+                    self.exhibits_input.clear()
+                    self.exhibits_input.addItems(self.data_exhibits)
+                    self.exhibits_input.setFixedSize(self.exhibits_input.sizeHint())
+                    self.chosen_exhibits.append(ex)
+                    break
+
+        if len(self.exhibits) == 0: 
+            self.exhibits_label.setText("Список экспонатов пуст")
+            self.exhibits_input.hide()
+        self.update_exhibits_table()
+
+    def fetch_exhibits(self, indx):
+        item = self.order_input.itemFromIndex(indx).text()
+        
+        cur_order = {}
+        for i, order in enumerate(self.orders):
+            if order["input"] == item:
+                cur_order = order
+                self.id = order["id"]
+                break
+
+        self.exhibits = Order_hold.get_exhibits(cur_order["id"])
+
+        self.data_exhibits = [i["input"] for i in self.exhibits]
+        self.exhibits_input.addItems(self.data_exhibits)
+        self.exhibits_label.setText("Выберите экспонаты: ")
+        self.exhibits_input.show()
+        self.order_label.setText(f"Приказ выбран: {item}")
+        self.order_input.hide()
+
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Escape:
+            self.close()
+
+
+    def update_exhibits_table(self):
+        self.exhibits_table.clear()
+        if self.chosen_exhibits:
+            self.exhibits_table.setColumnCount(2)
+            self.exhibits_table.setHorizontalHeaderLabels(["Экспонат", "Владелец"])
+            self.exhibits_table.setRowCount(len(self.chosen_exhibits))
+            self.exhibits_table.show()
+            for row, ex in enumerate(self.chosen_exhibits):
+                d = QTableWidgetItem(ex["name"])
+                t = QTableWidgetItem(ex["owner"])
+                for i in [t, d]:
+                    i.setFlags(i.flags() & ~Qt.ItemFlag.ItemIsEditable)
+
+                self.exhibits_table.setItem(row, 0, d)
+                self.exhibits_table.setItem(row, 1, t)
+
+            self.exhibits_table.setFixedSize(self.exhibits_table.sizeHint())
+
+        else:
+            self.exhibits_table.hide()
+    
+    def save_order(self):
+        date = self.date.dateTime()
+        if date.date() < datetime.datetime.now().date():
+            QMessageBox.warning(self, "ОШИБКА", "Дата введена неверно")
+            return
+
+        date = date.toString("dd/MM/yyyy HH:mm")
+        
+        if self.chosen_exhibits:
+            order = Order_get(date, self.order_id, self.chosen_exhibits)
+            QMessageBox.information(self, "", f"Заказ оформлен успешно")
+            self.close()
+
+        else:
+            QMessageBox.warning(self, "Ошибка", "Данные введены неверно")

@@ -51,3 +51,22 @@ def select_all(table) -> list:
 
     return data
 
+
+def select_where(table, key, value) -> list:
+    conn = create_connection()
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT * FROM {table} WHERE {key} = {value}")
+    rows = cursor.fetchall()
+    data = []
+    for row in rows:
+        data.append(row)
+
+    return data
+
+def select_one_where(table, key, value) -> list:
+    conn = create_connection()
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT * FROM {table} WHERE {key} = {value}")
+    rows = cursor.fetchone()
+    return rows
+

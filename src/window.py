@@ -37,15 +37,18 @@ class Window(QMainWindow):
         a_exhibition = QAction(QIcon(icon("add.png")), "&Добавить выставку", self)
         a_exhibition.triggered.connect(self.open_exhibition_widget)
 
-        a_order_hold = QAction(QIcon(icon("add.png")), "&Добавить выставку", self)
+        a_order_hold = QAction(QIcon(icon("add.png")), "&Приказ о проведении", self)
         a_order_hold.triggered.connect(self.open_order_hold)
+        
+        a_order_get = QAction(QIcon(icon("add.png")), "&Приказ о  поступлении", self)
+        a_order_get.triggered.connect(self.open_order_get)
 
         m_main.addAction(a_exhibit)
         m_main.addAction(a_exhibition)
         m_main.addAction(a_exit)
 
         m_orders.addAction(a_order_hold)
-        # m_orders.addAction(a_order_get)
+        m_orders.addAction(a_order_get)
         # m_orders.addAction(a_order_give)
         # m_orders.addAction(a_order_return)
 
@@ -65,3 +68,7 @@ class Window(QMainWindow):
     def open_order_hold(self):
         self.order_hold = Order_hold_widget(self)
         self.order_hold.show()
+    
+    def open_order_get(self):
+        self.order_get = Order_get_widget(self)
+        self.order_get.show()

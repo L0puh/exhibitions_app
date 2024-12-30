@@ -22,8 +22,8 @@ class Exhibit:
         
         execute_query(query, (self.id, self.name, self.owner, self.status))
 
-    def change_status(self, new_status):
-        query = f'''UPDATE exhibits SET status={new_status} WHERE exhibit_id = {self.id};'''
+    def change_status(exhibit_id, new_status):
+        query = f'''UPDATE exhibits SET status={new_status} WHERE exhibit_id = {exhibit_id};'''
         execute_query(query)
 
     def get_exhibits():
@@ -93,17 +93,49 @@ class Order_hold:
 
         print("[+] order hold added:", self.id)
 
+    def get_exhibits(order_id) -> list:
+        data = select_where("order_hold_exhibits", "order_id", order_id)
+        ex = []
+
+        for i in data:
+            ex_id = int(i[1])
+            d = select_one_where("exhibits", "exhibit_id", ex_id)
+            ex.append({"id": int(d[0]), "name": d[1], "owner": d[2], "status": int(d[3]),
+                             "input": f"{d[1]} ({d[2]})"})
+        return ex
+
+    def get_orders():
+        data: sqlite.Row = select_all("order_hold")
+        orders = []
+        for d in data:
+            orders.append({"date": d[1], "exhibition_id": int(d[2]), "id": int(d[0]),
+                          "place": d[3], "input": f"{d[0]}. {d[1]} ({d[3]})"
+                          })
+        return orders  
+
 
 class Order_get:
-    def __init__(self, date, order: Order_hold, exhibits: list[Exhibit]):
+    def __init__(self, date, order_id: int, exhibits: list[dict]):
+        self.id = 0
         self.date = date
-        self.order = order
+        self.order_id = order_id
         self.exhibits = exhibits
 
         self.insert_order_to_get()
 
     def insert_order_to_get(self):
-        pass
+        query = '''INSERT INTO order_get (id, date_get, order_id) 
+                   VALUES(?, ?, ?);'''
+        
+        self.id = get_last_id("order_get", "id")+1
+        execute_query(query, (self.id, self.date , self.order_id))
+        
+        for ex in self.exhibits:
+            Exhibit.change_status(ex["id"], 1)
+            print("[+] changed status of 'ex[\"name\"]' to 1" )
+
+        print("[+] order get added:", self.id)
+
 
 
 class Order_give:
