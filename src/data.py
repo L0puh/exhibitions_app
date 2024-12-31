@@ -75,9 +75,25 @@ class Exhibition:
         for d in data:
             names.append({"name": d[1], "about": d[2], "id": int(d[0])})
         return names
+
+    
+    def get_exhibtion(exhibition_id: int):
+        d = select_one_where("exhibitions", ["exhibition_id"], [exhibition_id])
+        return {"name": d[1], "about": d[2], "id": int(d[0])}
+
     
     def delete_exhibition(exhibition_id: int):
         delete_where("exhibitions", "exhibition_id", exhibition_id)
+
+    def get_connected_orders(exhibition_id: int):
+        data = select_where("order_hold", "exhibition_id", exhibition_id)
+        orders = []
+        for d in data:
+            orders.append({"date": d[1], "exhibition_id": int(d[2]), "id": int(d[0]),
+                           "place": d[3], "input": f"{d[0]}. {d[1]} ({d[3]})", "status": int(d[4])
+                          })
+        return orders  
+
 
 
 class Order_hold:
@@ -148,6 +164,13 @@ class Order_hold:
             ex.append({"id": int(d[0]), "name": d[1], "owner": d[2], "status": int(d[3]),
                              "input": f"{d[1]} ({d[2]})"})
         return ex
+
+    def get_dates(order_id) -> list:
+        data = select_where("order_hold_dates", "order_id", order_id)
+        dates = []
+        for i in data:
+            dates.append(i[1])
+        return dates
 
     def get_exhibits_ready_rentout(order_id) -> list:
         data = select_where("order_hold_exhibits", "order_id", order_id)

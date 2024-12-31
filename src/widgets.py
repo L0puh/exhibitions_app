@@ -127,6 +127,7 @@ class Order_hold_widget(QWidget):
 
     def initUI(self):
         self.setWindowTitle("Приказ")
+        self.setGeometry(500, 500, 800, 800)
         
         reglabel = QLabel("Дата формирования приказа: ")
         self.datereg = QDateTimeEdit()
@@ -500,7 +501,7 @@ class Orders_list_widget(QWidget):
 
     def initUI(self):
         self.setWindowTitle("Список")
-        self.setGeometry(600, 600, 500, 500)
+        self.setGeometry(800, 800, 900, 900)
         self.list_orders = QListWidget()
         self.update_list()
 
@@ -519,6 +520,9 @@ class Orders_list_widget(QWidget):
             status_label = QLabel(f"Статус: {Order_hold.get_status(data['status'])}")
 
             button = QPushButton()
+            info_button = QPushButton()
+            
+            info_icon = QIcon(icon("about.png"))
             get_icon = QIcon(icon("get.png"))
             give_icon = QIcon(icon("give.png"))
             return_icon = QIcon(icon("return.png"))
@@ -536,6 +540,11 @@ class Orders_list_widget(QWidget):
             else:
                 button.setIcon(delete_icon)
                 button.clicked.connect(lambda: self.delete_order(indx))
+            
+            info_button.setIcon(info_icon)
+            info_button.clicked.connect(lambda: self.info(indx))
+            info_button.setIconSize(info_button.sizeHint())
+            info_button.setFixedSize(info_button.iconSize())
 
             button.setIconSize(button.sizeHint())
             button.setFixedSize(button.iconSize())
@@ -543,13 +552,31 @@ class Orders_list_widget(QWidget):
             layout = QHBoxLayout()
             layout.addWidget(name_label)
             layout.addWidget(status_label)
+            layout.addWidget(info_button)
             layout.addWidget(button)
             widget = QWidget()
             widget.setLayout(layout)
             item.setSizeHint(widget.sizeHint())
             self.list_orders.addItem(item)
             self.list_orders.setItemWidget(item, widget)
-       
+      
+    def info(self, indx):
+        d = self.orders[indx] 
+        ex = Order_hold.get_exhibits(d['id'])
+        exhibits = "; ".join([i["name"] for i in ex])
+
+        da = Order_hold.get_dates(d['id'])
+        dates = "; ".join(i for i in da)
+        s = f"""
+        <h4>Организации выставки</h4>
+        <p>Дата регистрации: {d['id']}. {d['date']}.</p>
+        <p>Список дат проведения: {dates}</p>
+        <p>Место проведения: {d['place']}</p>
+        <p>Статус: {Order_hold.get_status(d['status'])}</p>
+        <p>Выставка: {Exhibition.get_exhibtion(d['exhibition_id'])['name']}</p>
+        <p>Экспонаты: {exhibits}</p>"""
+        QMessageBox.information(self, "", s)
+
     def open_order_get(self, indx):
         self.window.open_order_get(self.orders[indx])
         self.close()
